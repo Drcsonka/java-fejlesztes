@@ -1,15 +1,38 @@
 package com.epam.training.ticketservice.core.user;
 
-import com.epam.training.ticketservice.core.user.model.UserDto;
+import com.epam.training.ticketservice.core.user.persistence.entity.Admin;
+import org.springframework.stereotype.Service;
 
-import java.util.Optional;
+@Service
+public class LoginService {
 
-public interface LoginService {
+    public void signIn(String username, String password) throws Exception {
 
-    Optional<UserDto> login(String username, String password);
+        if(Admin.getPassword().equals(password) && Admin.getUsername().equals(username) &&
+                !Admin.isLogedIn()){
+            Admin.setIsLogedIn(true);
+            return;
+        }
+        if(Admin.isLogedIn()){
+            throw new Exception("You already logged in");
+        }
+        if(Admin.getPassword().equals(password) == false || Admin.getUsername().equals(username) == false){
+            throw new Exception("Login failed due to incorrect credentials");
+        }
 
-    Optional<UserDto> logout();
+    }
 
-    Optional<UserDto> getLoggedInUser();
+    public void signOut() throws Exception {
+
+        if(!Admin.isLogedIn())
+            throw new Exception("You are not logged in");
+        Admin.setIsLogedIn(false);
+
+    }
+
+    public boolean describe(){
+        return Admin.isLogedIn();
+
+    }
 
 }

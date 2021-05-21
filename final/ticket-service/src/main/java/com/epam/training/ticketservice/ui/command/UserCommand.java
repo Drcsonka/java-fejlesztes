@@ -1,76 +1,50 @@
 package com.epam.training.ticketservice.ui.command;
 
 import com.epam.training.ticketservice.core.user.LoginService;
-import com.epam.training.ticketservice.core.user.UserService;
-import com.epam.training.ticketservice.core.user.model.RegistrationDto;
-import com.epam.training.ticketservice.core.user.model.UserDto;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.epam.training.ticketservice.core.user.persistence.entity.Admin;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
-
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 @ShellComponent
 public class UserCommand {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(UserCommand.class);
+    LoginService signInOutService;
 
-    private final LoginService loginService;
-    private final UserService userService;
-
-    public UserCommand(LoginService loginService, UserService userService) {
-        this.loginService = loginService;
-        this.userService = userService;
+    @Autowired
+    UserCommand(LoginService signInOutService){
+        this.signInOutService=signInOutService;
     }
 
-    @ShellMethod(value = "User Login", key = "user login")
-    public String login(String username, String password) {
-        return handleErrorScenario(() -> loginService.login(username, password),
-                (userDto) -> userDto.toString(),
-                "Wrong username or password");
-    }
 
-    @ShellMethod(value = "User Logout", key = "user logout")
-    public String logout() {
-        return handleErrorScenario(() -> loginService.logout(),
-                (userDto) -> userDto.getUsername() + " is logged out",
-                "You need to login first");
-    }
+    @ShellMethod(value = "Sign in as an admin",key = "sign in privileged")
+    public String login(String username,String password){
 
-    @ShellMethod(value = "User Print", key = "user print")
-    public String printLoggedInUser() {
-        return handleErrorScenario(() -> loginService.getLoggedInUser(),
-                (userDto) -> userDto.toString(),
-                "You need to login first");
-    }
-
-    @ShellMethod(value = "User Registrate", key = "user registrate")
-    public String registrateUser(String username, String password) {
-        RegistrationDto registrationDto = new RegistrationDto(username, password);
-        String message;
         try {
-            userService.registerUser(registrationDto);
-            message = "Registration was successful";
-        } catch (Exception e) {
-            LOGGER.error("Error during registration", e);
-            message = "The registration failed";
+            signInOutService.signIn(username,password);
+        }catch (Exception e) {
+            return e.getMessage();
         }
 
-        return message;
+        return "You are signed in";
     }
 
-    private String handleErrorScenario(Supplier<Optional<UserDto>> supplier, Function<UserDto, String> successfulMessageProvider, String errorMessage) {
-        Optional<UserDto> userDto = supplier.get();
-        String message;
-        if (userDto.isPresent()) {
-            message = successfulMessageProvider.apply(userDto.get());
-        } else {
-            message = errorMessage;
+    @ShellMethod(value = "Log out from admin account",key = "sign out")
+    public String logout(){
+
+        try {
+            signInOutService.signOut();
+        }catch (Exception e){
+            return e.getMessage();
         }
-        return message;
+        return "You signed out";
+    }
+
+    @ShellMethod(value = "Describe account", key = "describe account")
+    public String describeAccount(){
+        if(signInOutService.describe())
+            return "Signed in with privileged account "+ Admin.getUsername();
+        return "You are not signed in";
     }
 
 }
